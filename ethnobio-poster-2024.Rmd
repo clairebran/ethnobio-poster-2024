@@ -1,0 +1,146 @@
+---
+title: "Applying Information Theory of Osteometric Data: A New Approach to Constructing Demographic Profiles of Faunal Assemblages"
+author: "Claire Brandes"
+output: 
+  html_document: 
+    highlight: tango
+    toc: TRUE
+    toc_float: TRUE
+    collapsed: FALSE
+    smooth_scroll: TRUE
+---
+
+Loading in necessary packages:
+
+```{r message=FALSE}
+library(tidyverse)
+```
+
+Loading in data set:
+
+```{r message=FALSE}
+f <- "https://raw.githubusercontent.com/clairebran/ethnobio-poster-2024/main/African%20Murine%20Rodents%20Character%20State%20Matrix.csv"
+rodent_data <- read_csv(f, col_names = TRUE)
+```
+
+# Shannon Information Entropy
+
+Shannon information entropy is a measure in information theory which quantifies the degree of "surprise" captured by a given variable. In species identification, a highly informative morphological character is one whose state varies more widely among taxa. Applying information theory to zooarchaeology is one way to elucidate morphological characteristics that may be most useful in identifying faunal remains from archaeological (or paleontological) assemblages. 
+
+The mathematical formula to calculate information entropy is as follows:
+
+$$H(X) = - \sum_{i}P(x_i) * log_2 P(x_i)$$
+
+Essentially, we calculate the sum over all possible outcomes of a discrete random variables, multiplied by the probability of event $x$ and the log of the probability of event $x$. 
+
+# Rodent Case Study
+
+**Calculating Shannon information entropy for a character state matrix of African Murine rodents to develop a decision tree for identifying species**
+
+Creating function to calculate Shannon information entropy:
+
+```{r}
+shannon_entropy <- function(x) {
+  probs <- table(x) / length(x) # calculates the probability of each character state value occurring in the vector x
+  entropy <- -sum(probs * log2(probs)) # entropy formula 
+  return(entropy)
+}
+```
+
+Calculating Shannon entropy for each morphological character in the data set:
+
+```{r}
+# Applying shannon_entropy function to all columns in the data set (except for the first column of genus names)
+entropy_values <- apply(rodent_data[, -1], 2, shannon_entropy) 
+```
+
+Displaying information content of each morphological character in a data frame:
+
+```{r}
+char_info <- data.frame(
+  Character = colnames(rodent_data)[-1],
+  Entropy = entropy_values)
+
+# Ordering from most to least information content 
+char_info <- char_info[order(-char_info$Entropy), ] 
+
+# Removing row names for ease of reading table
+rownames(char_info) <- NULL 
+
+print(char_info)
+```
+
+# Elk Case Study 
+
+Loading in data set:
+
+```{r message=FALSE}
+f <- "https://raw.githubusercontent.com/clairebran/ethnobio-poster-2024/main/elk_data.csv"
+elk_data <- read_csv(f, col_names = TRUE)
+
+# Removing empty column 
+elk_data <- elk_data %>% select(-18) 
+
+# Dropping missing data 
+elk_data <- drop_na(elk_data)
+
+# Renaming the variables so they are easier to work with 
+elk_data <- elk_data %>%
+  rename(
+    "GSM_ID" = "GSM#",
+    "Age_months" = "Age (mo)"
+  )
+```
+
+Creating a custom function to calculate Shannon's information entropy with the goal of determining which morphological character is the most informative *based on *for* differentiating individuals based on a given demographic trait (e.g., sex or age). For example, for adults versus juveniles, which morphological character has the highest information content? 
+
+```{r}
+shannon_entropy_2 <- function(variable) {
+  bin_probs <- prop.table(table(variable)) # Calculating probability distribution for each of the bins
+  entropy <- -sum(bin_probs * log2(bin_probs)) # Entropy formula 
+  return(entropy)
+}
+```
+
+Sub-setting data set by group of interest. I this case, it is age group 
+
+```{r}
+elk_data <- elk_data %>%
+  mutate(age_in_years = case_when(
+    `Age (mo)` <= 12 ~ ">1",
+    `Age (mo)` <= 24 ~ "1-2",
+    `Age (mo)` <= 36 ~ "2-3",
+    `Age (mo)` <= 48 ~ "3-4",
+    `Age (mo)` <= 60 ~ "4-5",
+    `Age (mo)` >= 61 ~ "5+"
+  ))
+
+elk_data <- elk_data %>%
+  rename(
+    "GSM_ID" = "GSM#",
+    "Age_months" = "Age (mo)"
+  )
+
+morphological_vars <- (names(elk_data))
+
+morphological_vars <- morphological_vars[!morphological_vars %in% c("GSM_ID", "Age_months", "age_in_years")]
+
+```
+
+Calculating Shannon's information content for each morphological variable for each age group
+
+```{r}
+for (age_in_years in unique(elk_data$age_in_years)) {
+  age_group_data <- subset(elk_data, age_in_years == age_in_years)
+  entropies <- sapply(age_group_data[, morphological_vars], shannon_entropy_2)
+  most_informative_variable <- names(entropies)[which.min(entropies)]
+  print(paste("Most informative morphological variable for", age_in_years, ":", most_informative_variable))
+}
+```
+
+Exploring these results visually:
+
+```{r}
+ggplot(data = elk_data, aes(x = age_in_years, y = )) 
+```
+
