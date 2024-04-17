@@ -88,7 +88,22 @@ elk_data <- drop_na(elk_data)
 elk_data <- elk_data %>%
   rename(
     "GSM_ID" = "GSM#",
-    "Age_months" = "Age (mo)"
+    "Age_months" = "Age (mo)",
+    "ToothRowLength" = "Tooth Row Length (mm)",
+    "ToothRowBreadth" = "Tooth Row Breadth (mm)",
+    "MolarRowLength" = "Molar Row Length (mm)",
+    "MolarRowBreadth" = "Molar Row Breadth (mm)",
+    "AverageTRB_MRB" = "Average TRB + MRB (mm)",
+    "DiastemaLength" = "Diastema Length",
+    "M1Breadth" = "M1 Breadth",
+    "M2Breadth" = "M2 Breadth",
+    "M3Breadth" = "M3 Breadth",
+    "M1Height" = "M1 Height",
+    "M2Height" = "M2 Height",
+    "M3Height" = "M3 Height",
+    "M1Length" = "M1 Length",
+    "M2Length" = "M2 Length",
+    "M3Length" = "M3 Length"
   )
 ```
 
@@ -107,19 +122,13 @@ Sub-setting data set by group of interest. I this case, it is age group
 ```{r}
 elk_data <- elk_data %>%
   mutate(age_in_years = case_when(
-    `Age (mo)` <= 12 ~ ">1",
-    `Age (mo)` <= 24 ~ "1-2",
-    `Age (mo)` <= 36 ~ "2-3",
-    `Age (mo)` <= 48 ~ "3-4",
-    `Age (mo)` <= 60 ~ "4-5",
-    `Age (mo)` >= 61 ~ "5+"
+    `Age_months` <= 12 ~ ">1",
+    `Age_months` <= 24 ~ "1-2",
+    `Age_months` <= 36 ~ "2-3",
+    `Age_months` <= 48 ~ "3-4",
+    `Age_months` <= 60 ~ "4-5",
+    `Age_months` >= 61 ~ "5+"
   ))
-
-elk_data <- elk_data %>%
-  rename(
-    "GSM_ID" = "GSM#",
-    "Age_months" = "Age (mo)"
-  )
 
 morphological_vars <- (names(elk_data))
 
@@ -130,17 +139,35 @@ morphological_vars <- morphological_vars[!morphological_vars %in% c("GSM_ID", "A
 Calculating Shannon's information content for each morphological variable for each age group
 
 ```{r}
+# Initialize matrix to store entropy values
+entropies <- matrix(NA, nrow = length(morphological_vars), ncol = length(unique(elk_data$age_in_years)))
+
+# Loop through each age group
 for (age_in_years in unique(elk_data$age_in_years)) {
+  # Subset the data for the current age group
   age_group_data <- subset(elk_data, age_in_years == age_in_years)
-  entropies <- sapply(age_group_data[, morphological_vars], shannon_entropy_2)
-  most_informative_variable <- names(entropies)[which.min(entropies)]
-  print(paste("Most informative morphological variable for", age_in_years, ":", most_informative_variable))
+  
+  # Calculate Shannon's information entropy for each morphological variable
+  entropies[, which(unique(elk_data$age_in_years) == age_in_years)] <- sapply(age_group_data[, morphological_vars], shannon_entropy_2)
 }
+
+# Compute the average entropy across age groups for each morphological variable
+average_entropies <- rowMeans(entropies)
+
+# Identify the morphological variable with the highest average entropy
+most_variable_variable <- morphological_vars[which.max(average_entropies)]
+
+# Print the result
+print(paste("The most variable morphological variable across age groups is:", most_variable_variable))
 ```
 
 Exploring these results visually:
 
 ```{r}
-ggplot(data = elk_data, aes(x = age_in_years, y = )) 
+ggplot(data = elk_data, aes(x = age_in_years, y = ToothRowLength)) +
+  geom_boxplot() + geom_jitter()
+  theme_classic() +
+  xlab("Age in Years") + ylab("Tooth Row Length")
 ```
+
 
