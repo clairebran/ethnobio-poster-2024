@@ -81,9 +81,6 @@ elk_data <- read_csv(f, col_names = TRUE)
 # Removing empty column 
 elk_data <- elk_data %>% select(-18) 
 
-# Dropping missing data 
-elk_data <- drop_na(elk_data)
-
 # Renaming the variables so they are easier to work with 
 elk_data <- elk_data %>%
   rename(
@@ -163,11 +160,10 @@ print(paste("The most variable morphological variable across age groups is:", mo
 
 Exploring these results visually:
 
-```{r}
-ggplot(data = elk_data, aes(x = age_in_years, y = ToothRowLength)) +
-  geom_boxplot() + geom_jitter()
-  theme_classic() +
-  xlab("Age in Years") + ylab("Tooth Row Length")
+```{r warning=FALSE}
+ggplot(elk_data, aes(x=age_in_years, y=M2Length)) + 
+    geom_boxplot(color="blue", fill="blue", alpha=0.2, outlier.colour="red", outlier.fill="red", outlier.size=3) + theme_light() +
+  xlab("Age in Years") + ylab("Second Molar Length")
 ```
 
 
