@@ -73,6 +73,13 @@ kable(char_info) %>%
   kable_styling(bootstrap_options = "striped") 
 ```
 
+Using information content data to construct a decision tree for determining species:
+
+```{r echo=FALSE}
+knitr::include_graphics("decision_tree.jpg")
+```
+
+
 # Elk Case Study 
 
 Loading in data set:
@@ -186,7 +193,7 @@ Calculating overall information content of age groups:
 (overall_IC <- shannon_IC(elk_data$age_in_years))
 ```
 
-Calculating conditional entropy and information gain for each morphological variable:
+Calculating conditional information content and information gain for each morphological variable:
 
 ```{r}
 information_gain <- numeric(length(morpho_vars))
